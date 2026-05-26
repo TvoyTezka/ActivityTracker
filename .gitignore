@@ -1,0 +1,11 @@
+bin/
+obj/
+publish/
+*.user
+*.suo
+.vs/
+.DS_Store
+Thumbs.db
+tracker.db
+*.db-shm
+*.db-wal

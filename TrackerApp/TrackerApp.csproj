@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <ApplicationIcon>app.ico</ApplicationIcon>
+    <AssemblyTitle>Activity Tracker</AssemblyTitle>
+    <Description>Tracks time spent in foreground applications</Description>
+    <Company />
+    <Product>Activity Tracker</Product>
+    <Version>1.0.0</Version>
+    <FileVersion>1.0.0</FileVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.8" />
+  </ItemGroup>
+
+</Project>
