@@ -114,9 +114,9 @@ public class WebServer
                     PropertyNameCaseInsensitive = true
                 });
 
-                if (data != null && !string.IsNullOrWhiteSpace(data.Process) && data.Category != null)
+                if (data != null && !string.IsNullOrWhiteSpace(data.Process))
                 {
-                    _db.SaveCategoryMapping(data.Process, data.Category);
+                    _db.SaveProcessSettings(data.Process, data.Category, data.CustomName);
                     resp.StatusCode = (int)HttpStatusCode.OK;
                     var successMsg = Encoding.UTF8.GetBytes("{\"success\":true}");
                     resp.ContentType = "application/json";
@@ -131,6 +131,19 @@ public class WebServer
                     resp.ContentLength64 = errMsg.Length;
                     await resp.OutputStream.WriteAsync(errMsg);
                 }
+            }
+            else if (req.HttpMethod == "GET" && req.Url?.AbsolutePath == "/api/timeline")
+            {
+                var start = req.QueryString["start"] ?? DateTime.Now.ToString("yyyy-MM-dd");
+                var end = req.QueryString["end"] ?? DateTime.Now.ToString("yyyy-MM-dd");
+
+                var timeline = _db.QueryTimeline(start, end);
+                var json = JsonSerializer.Serialize(timeline);
+                var buf = Encoding.UTF8.GetBytes(json);
+
+                resp.ContentType = "application/json; charset=utf-8";
+                resp.ContentLength64 = buf.Length;
+                await resp.OutputStream.WriteAsync(buf);
             }
             else
             {
@@ -168,6 +181,7 @@ public class WebServer
     private class MappingRequest
     {
         public string Process { get; set; } = "";
-        public string Category { get; set; } = "";
+        public string? Category { get; set; }
+        public string? CustomName { get; set; }
     }
 }

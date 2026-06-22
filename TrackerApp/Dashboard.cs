@@ -29,16 +29,16 @@ public static class Dashboard
         var weekRaw = db.QueryReport(monday);
         var allRaw = db.QueryReport(null);
 
-        var todayData = todayRaw.Select(x => new { process = x.process, category = x.category, seconds = x.totalSeconds }).ToList();
+        var todayData = todayRaw.Select(x => new { process = x.process, category = x.category, customName = x.customName, seconds = x.totalSeconds }).ToList();
         var weekData = db.QueryDailyTotals(7).Select(x => new { day = x.day, seconds = x.totalSeconds }).ToList();
-        var weekApps = weekRaw.Select(x => new { process = x.process, category = x.category, seconds = x.totalSeconds }).ToList();
-        var allData = allRaw.Select(x => new { process = x.process, category = x.category, seconds = x.totalSeconds }).ToList();
+        var weekApps = weekRaw.Select(x => new { process = x.process, category = x.category, customName = x.customName, seconds = x.totalSeconds }).ToList();
+        var allData = allRaw.Select(x => new { process = x.process, category = x.category, customName = x.customName, seconds = x.totalSeconds }).ToList();
 
         var todayTotal = todayData.Sum(x => x.seconds);
         var weekTotal = weekRaw.Sum(x => x.totalSeconds);
         var grandTotal = db.QueryGrandTotal();
 
-        var allProcessMappings = db.QueryAllProcessMappings().Select(x => new { process = x.process, category = x.category }).ToList();
+        var allProcessMappings = db.QueryAllProcessMappings().Select(x => new { process = x.process, category = x.category, customName = x.customName }).ToList();
 
         var todayDataJson = JsonSerializer.Serialize(todayData);
         var weekDataJson = JsonSerializer.Serialize(weekData);
@@ -648,6 +648,229 @@ public static class Dashboard
     from { opacity: 0; transform: translateY(6px); }
     to { opacity: 1; transform: translateY(0); }
   }
+
+  /* Timeline View Styles */
+  .timeline-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    background: var(--surface);
+    padding: 16px 20px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+  }
+  .timeline-nav-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .timeline-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border);
+    color: var(--heading);
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .timeline-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--border-hover);
+  }
+  .timeline-btn.active {
+    background: var(--primary-glow);
+    border-color: var(--border-focus);
+  }
+  .timeline-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--heading);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  
+  .timeline-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  /* Timeline entries list */
+  .timeline-list {
+    position: relative;
+    padding-left: 20px;
+    border-left: 2px solid rgba(255, 255, 255, 0.05);
+    margin-left: 10px;
+  }
+  .timeline-entry-node {
+    position: relative;
+    margin-bottom: 20px;
+  }
+  .timeline-entry-node::before {
+    content: '';
+    position: absolute;
+    left: -26px;
+    top: 6px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--primary);
+    box-shadow: 0 0 8px var(--primary);
+    border: 2px solid var(--bg);
+  }
+  .timeline-entry-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .timeline-entry-card:hover {
+    border-color: var(--border-hover);
+    background: var(--surface-hover);
+  }
+  .timeline-entry-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .timeline-entry-title-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .timeline-entry-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--heading);
+  }
+  .timeline-entry-process {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .timeline-entry-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+  }
+  .timeline-entry-time {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text);
+  }
+  .timeline-entry-duration {
+    font-weight: 600;
+    color: var(--primary);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .timeline-entry-badge {
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 500;
+  }
+  
+  /* Expanded title changes list */
+  .timeline-entry-details {
+    display: none;
+    border-top: 1px solid var(--border);
+    padding-top: 10px;
+    margin-top: 4px;
+    flex-direction: column;
+    gap: 6px;
+    animation: fadeIn 0.2s ease;
+  }
+  .timeline-entry-details.open {
+    display: flex;
+  }
+  .timeline-sub-entry {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text);
+    padding-left: 8px;
+    border-left: 2px solid var(--border);
+  }
+  .timeline-sub-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 500px;
+  }
+  .timeline-sub-time {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+  
+  /* Weekly Timeline Day Accordions */
+  .week-day-accordion {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+  .week-day-header {
+    padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.2s;
+  }
+  .week-day-header:hover {
+    background: rgba(255, 255, 255, 0.02);
+  }
+  .week-day-title-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .week-day-name {
+    font-size: 15px;
+    color: var(--heading);
+  }
+  .week-day-date {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .week-day-total {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--primary);
+  }
+  .week-day-content {
+    display: none;
+    padding: 20px;
+    border-top: 1px solid var(--border);
+    background: rgba(0, 0, 0, 0.15);
+  }
+  .week-day-content.open {
+    display: block;
+  }
+  .week-day-header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .week-day-chevron {
+    transition: transform 0.2s ease, color 0.2s ease;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+  .week-day-accordion.open .week-day-chevron {
+    transform: rotate(180deg);
+    color: var(--primary);
+  }
 </style>
 </head>
 <body>
@@ -660,6 +883,7 @@ public static class Dashboard
     </div>
     <div class=""nav-tabs"">
       <button class=""tab-btn active"" onclick=""switchTab('dashboard')"">Dashboard</button>
+      <button class=""tab-btn"" onclick=""switchTab('timeline')"">Timeline</button>
       <button class=""tab-btn"" onclick=""switchTab('settings')"">Categories Mapping</button>
     </div>
   </div>
@@ -733,6 +957,25 @@ public static class Dashboard
     </div>
   </div>
 
+  <!-- VIEW: TIMELINE -->
+  <div id=""view-timeline"" class=""view-pane"">
+    <div class=""timeline-header"">
+      <div class=""timeline-nav-group"">
+        <button class=""timeline-btn active"" id=""timeline-mode-day"" onclick=""setTimelineMode('day')"">Day</button>
+        <button class=""timeline-btn"" id=""timeline-mode-week"" onclick=""setTimelineMode('week')"">Week</button>
+      </div>
+      <div class=""timeline-title"" id=""timeline-date-label""></div>
+      <div class=""timeline-nav-group"">
+        <button class=""timeline-btn"" onclick=""navigateTimeline(-1)"">&larr; Prev</button>
+        <button class=""timeline-btn"" id=""timeline-next-btn"" onclick=""navigateTimeline(1)"">Next &rarr;</button>
+      </div>
+    </div>
+    
+    <div class=""timeline-container"" id=""timeline-content-area"">
+      <!-- Renders dynamically -->
+    </div>
+  </div>
+
   <!-- VIEW: SETTINGS -->
   <div id=""view-settings"" class=""view-pane"">
     <div class=""card full"">
@@ -752,6 +995,7 @@ public static class Dashboard
           <thead>
             <tr>
               <th>Process Name</th>
+              <th>Display Name</th>
               <th>Category</th>
               <th>Custom Category</th>
               <th>Action</th>
@@ -793,7 +1037,7 @@ public static class Dashboard
   ];
 
   const standardCategories = [
-    ""Development"", ""Games"", ""Browsing"", ""Communication"", ""Media"", ""Work"", ""System"", ""Other""
+    ""Development"", ""Games"", ""Browsing"", ""Communication"", ""Media"", ""Work"", ""System"", ""Ignored"", ""Other""
   ];
 
   // Helper: Format seconds to readable duration
@@ -994,10 +1238,11 @@ public static class Dashboard
 
     categoryData.items.forEach(proc => {
       const pct = (proc.seconds / categoryData.seconds) * 100;
+      const displayName = proc.customName || proc.process;
       const row = document.createElement('div');
       row.className = 'detail-row';
       row.innerHTML = `
-        <span class=""detail-name"" title=""${proc.process}"">${proc.process}</span>
+        <span class=""detail-name"" title=""${proc.process}"">${displayName}</span>
         <div class=""detail-bar-track"">
           <div class=""detail-bar-fill"" style=""width:${pct.toFixed(0)}%; background:${color}""></div>
         </div>
@@ -1071,9 +1316,10 @@ public static class Dashboard
       let procRows = '';
       cat.items.slice(0, 5).forEach(proc => {
         const pct = (proc.seconds / cat.seconds) * 100;
+        const displayName = proc.customName || proc.process;
         procRows += `
           <div class=""detail-row"" style=""margin-bottom:6px"">
-            <span class=""detail-name"" style=""width:120px; font-size:12px"" title=""${proc.process}"">${proc.process}</span>
+            <span class=""detail-name"" style=""width:120px; font-size:12px"" title=""${proc.process}"">${displayName}</span>
             <div class=""detail-bar-track"" style=""height:5px"">
               <div class=""detail-bar-fill"" style=""width:${pct.toFixed(0)}%; background:${color}""></div>
             </div>
@@ -1108,7 +1354,7 @@ public static class Dashboard
     tbody.innerHTML = '';
 
     if (data.length === 0) {
-      tbody.innerHTML = '<tr><td colspan=""4"" class=""empty"">No processes tracked yet. Run some apps first!</td></tr>';
+      tbody.innerHTML = '<tr><td colspan=""5"" class=""empty"">No processes tracked yet. Run some apps first!</td></tr>';
       return;
     }
 
@@ -1128,8 +1374,13 @@ public static class Dashboard
       const selectedCustom = isCustom ? 'selected' : '';
       optionsHtml += `<option value=""_custom_"" ${selectedCustom}>Custom...</option>`;
 
+      const displayVal = item.customName || '';
+
       tr.innerHTML = `
         <td><span class=""proc-badge"">${item.process}</span></td>
+        <td>
+          <input type=""text"" class=""custom-cat-input"" id=""display-input-${item.process}"" value=""${displayVal}"" placeholder=""Friendly Name (e.g. VS Code)"" style=""width: 200px;"" onchange=""saveMapping('${item.process}')"">
+        </td>
         <td>
           <select class=""select-cat"" onchange=""onCategorySelect(this, '${item.process}')"">
             ${optionsHtml}
@@ -1137,7 +1388,7 @@ public static class Dashboard
         </td>
         <td>
           <div class=""custom-cat-group"" id=""custom-group-${item.process}"" style=""display: ${isCustom ? 'flex' : 'none'}"">
-            <input type=""text"" class=""custom-cat-input"" id=""custom-input-${item.process}"" value=""${customVal}"" placeholder=""E.g. Gaming"">
+            <input type=""text"" class=""custom-cat-input"" id=""custom-input-${item.process}"" value=""${customVal}"" placeholder=""E.g. Gaming"" onchange=""saveMapping('${item.process}')"">
           </div>
         </td>
         <td>
@@ -1168,6 +1419,7 @@ public static class Dashboard
   async function saveMapping(process) {
     const select = document.querySelector(`tr[data-proc=""${process.toLowerCase()}""] .select-cat`);
     const customInput = document.getElementById(`custom-input-${process}`);
+    const displayInput = document.getElementById(`display-input-${process}`);
     
     let category = select.value;
     if (category === '_custom_') {
@@ -1179,25 +1431,30 @@ public static class Dashboard
       }
     }
 
+    const customName = displayInput.value.trim();
+
     try {
       const response = await fetch('/api/map', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ process, category })
+        body: JSON.stringify({ process, category, customName })
       });
 
       if (response.ok) {
         // Update local data
         const item = processMappings.find(x => x.process === process);
-        if (item) item.category = category;
+        if (item) {
+          item.category = category;
+          item.customName = customName;
+        }
 
         // Show toast
-        showToast(`Saved: ${process} &rarr; ${category}`);
+        showToast(`Saved: ${process} &rarr; ${customName || process} [${category}]`);
 
         // Update dashboard datasets
-        updateLocalDataset(process, category);
+        updateLocalDataset(process, category, customName);
 
         // Re-render dashboard elements
         drawDonut('today-donut', 'today-legend', 'today-details', rawToday, todayTotal);
@@ -1212,11 +1469,12 @@ public static class Dashboard
   }
 
   // Dynamically update categories in memory lists when mapping is updated
-  function updateLocalDataset(process, category) {
+  function updateLocalDataset(process, category, customName) {
     const updateList = (list) => {
       list.forEach(item => {
         if (item.process === process) {
           item.category = category;
+          item.customName = customName;
         }
       });
     };
@@ -1254,6 +1512,255 @@ public static class Dashboard
     }, 2500);
   }
 
+  // Timeline UI Variables & Functions
+  let activeTimelineMode = 'day';
+  let activeTimelineDate = new Date();
+
+  function setTimelineMode(mode) {
+    activeTimelineMode = mode;
+    document.getElementById('timeline-mode-day').classList.toggle('active', mode === 'day');
+    document.getElementById('timeline-mode-week').classList.toggle('active', mode === 'week');
+    loadTimelineData();
+  }
+
+  function navigateTimeline(offset) {
+    if (activeTimelineMode === 'day') {
+      activeTimelineDate.setDate(activeTimelineDate.getDate() + offset);
+    } else {
+      activeTimelineDate.setDate(activeTimelineDate.getDate() + (offset * 7));
+    }
+    loadTimelineData();
+  }
+
+  function formatDateIso(date) {
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  async function loadTimelineData() {
+    const area = document.getElementById('timeline-content-area');
+    area.innerHTML = '<div class=""empty"">Loading...</div>';
+
+    let startStr, endStr;
+    if (activeTimelineMode === 'day') {
+      startStr = formatDateIso(activeTimelineDate);
+      endStr = startStr;
+      
+      const formattedLabel = activeTimelineDate.toLocaleDateString('en-US', {
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+      });
+      document.getElementById('timeline-date-label').innerText = formattedLabel;
+    } else {
+      // Find Monday and Sunday of the active week
+      const currentDay = activeTimelineDate.getDay();
+      const distanceToMonday = currentDay === 0 ? -6 : 1 - currentDay;
+      
+      const monday = new Date(activeTimelineDate);
+      monday.setDate(monday.getDate() + distanceToMonday);
+      
+      const sunday = new Date(monday);
+      sunday.setDate(sunday.getDate() + 6);
+      
+      startStr = formatDateIso(monday);
+      endStr = sundayStr = formatDateIso(sunday);
+
+      const monLabel = monday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const sunLabel = sunday.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      document.getElementById('timeline-date-label').innerText = `${monLabel} - ${sunLabel}`;
+    }
+
+    try {
+      const res = await fetch(`/api/timeline?start=${startStr}&end=${endStr}`);
+      if (!res.ok) throw new Error('API error');
+      const data = await res.json();
+      renderTimeline(data);
+    } catch (e) {
+      area.innerHTML = '<div class=""empty"" style=""color:var(--accent)"">Failed to load history from server</div>';
+    }
+  }
+
+  function renderTimeline(data) {
+    const container = document.getElementById('timeline-content-area');
+    container.innerHTML = '';
+
+    if (activeTimelineMode === 'day') {
+      renderDailyTimeline(container, data);
+    } else {
+      renderWeeklyTimeline(container, data);
+    }
+  }
+
+  function renderDailyTimeline(container, data) {
+    if (!data || data.length === 0) {
+      container.innerHTML = '<div class=""empty"">No activity tracked for this day</div>';
+      return;
+    }
+
+    const timelineList = document.createElement('div');
+    timelineList.className = 'timeline-list';
+
+    // Group adjacent sessions of the same application
+    const groups = [];
+    let currentGroup = null;
+
+    data.forEach(session => {
+      const appName = session.CustomName || session.Process;
+      
+      const started = new Date(session.StartedAt);
+      const ended = session.EndedAt ? new Date(session.EndedAt) : new Date();
+
+      if (currentGroup && currentGroup.appName === appName && currentGroup.category === session.Category) {
+        currentGroup.duration += session.Duration;
+        currentGroup.ended = ended;
+        currentGroup.sessions.push(session);
+      } else {
+        if (currentGroup) groups.push(currentGroup);
+        currentGroup = {
+          appName,
+          process: session.Process,
+          category: session.Category,
+          started,
+          ended,
+          duration: session.Duration,
+          sessions: [session]
+        };
+      }
+    });
+    if (currentGroup) groups.push(currentGroup);
+
+    groups.forEach((group, idx) => {
+      const node = document.createElement('div');
+      node.className = 'timeline-entry-node';
+      
+      const catIdx = standardCategories.indexOf(group.category);
+      const color = catIdx >= 0 ? colors[catIdx % colors.length] : '#a1a1aa';
+
+      const timeStr = `${formatTime(group.started)} - ${formatTime(group.ended)}`;
+      const durStr = formatDuration(group.duration);
+
+      let detailsHtml = '';
+      group.sessions.forEach(s => {
+        const sStart = new Date(s.StartedAt);
+        const sEnd = s.EndedAt ? new Date(s.EndedAt) : new Date();
+        const sTime = `${formatTime(sStart)} - ${formatTime(sEnd)}`;
+        
+        const titleText = s.WindowTitle || '(No title)';
+        const titleEscaped = titleText
+          .replace(/&/g, ""&amp;"")
+          .replace(/</g, ""&lt;"")
+          .replace(/>/g, ""&gt;"")
+          .replace(/""/g, ""&quot;"")
+          .replace(/'/g, ""&#039;"");
+          
+        detailsHtml += `
+          <div class=""timeline-sub-entry"">
+            <span class=""timeline-sub-title"" title=""${titleEscaped}"">${titleEscaped || '(No title)'}</span>
+            <span class=""timeline-sub-time"">${sTime} (${formatDuration(s.Duration)})</span>
+          </div>
+        `;
+      });
+
+      const uniqueIdx = Math.random().toString(36).substr(2, 9);
+
+      node.innerHTML = `
+        <div class=""timeline-entry-card"" onclick=""toggleTimelineDetail('${uniqueIdx}')"">
+          <div class=""timeline-entry-header"">
+            <div class=""timeline-entry-title-group"">
+              <span class=""timeline-entry-title"">${group.appName}</span>
+              ${group.appName !== group.process ? `<span class=""timeline-entry-process"">${group.process}</span>` : ''}
+            </div>
+            <span class=""timeline-entry-badge"" style=""background:${color}30; color:${color}; border:1px solid ${color}50"">${group.category}</span>
+          </div>
+          <div class=""timeline-entry-meta"">
+            <span class=""timeline-entry-time"">${timeStr}</span>
+            <span class=""timeline-entry-duration"">&bull; ${durStr}</span>
+          </div>
+          <div class=""timeline-entry-details"" id=""timeline-detail-${uniqueIdx}"">
+            ${detailsHtml}
+          </div>
+        </div>
+      `;
+
+      node.style.setProperty('--primary', color);
+      timelineList.appendChild(node);
+    });
+
+    container.appendChild(timelineList);
+  }
+
+  function toggleTimelineDetail(idx) {
+    const el = document.getElementById(`timeline-detail-${idx}`);
+    if (el) {
+      el.classList.toggle('open');
+    }
+  }
+
+  function formatTime(date) {
+    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+  }
+
+  function renderWeeklyTimeline(container, data) {
+    const days = {};
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(activeTimelineDate);
+      const currentDay = activeTimelineDate.getDay();
+      const distanceToMonday = currentDay === 0 ? -6 : 1 - currentDay;
+      d.setDate(d.getDate() + distanceToMonday + i);
+      const dateStr = formatDateIso(d);
+      days[dateStr] = {
+        date: d,
+        sessions: []
+      };
+    }
+
+    data.forEach(session => {
+      const dateStr = session.StartedAt.substring(0, 10);
+      if (days[dateStr]) {
+        days[dateStr].sessions.push(session);
+      }
+    });
+
+    Object.entries(days).forEach(([dateStr, dayInfo], idx) => {
+      const totalSec = dayInfo.sessions.reduce((acc, s) => acc + s.Duration, 0);
+      const dayLabel = dayInfo.date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+      const isToday = formatDateIso(dayInfo.date) === formatDateIso(new Date());
+
+      const accordion = document.createElement('div');
+      accordion.className = `week-day-accordion ${isToday ? 'open' : ''}`;
+
+      accordion.innerHTML = `
+        <div class=""week-day-header"" onclick=""toggleWeekDay(${idx}, this)"">
+          <div class=""week-day-title-group"">
+            <span class=""week-day-name"">${dayLabel}</span>
+            <span class=""week-day-date"">(${dayInfo.sessions.length} sessions)</span>
+          </div>
+          <div class=""week-day-header-right"">
+            <span class=""week-day-total"">${totalSec > 0 ? formatDuration(totalSec) : 'No activity'}</span>
+            <svg class=""week-day-chevron"" viewBox=""0 0 24 24"" width=""18"" height=""18"" stroke=""currentColor"" stroke-width=""2"" fill=""none"" stroke-linecap=""round"" stroke-linejoin=""round""><polyline points=""6 9 12 15 18 9""></polyline></svg>
+          </div>
+        </div>
+        <div class=""week-day-content ${isToday ? 'open' : ''}"" id=""week-day-content-${idx}"">
+        </div>
+      `;
+
+      container.appendChild(accordion);
+
+      const contentArea = accordion.querySelector(`#week-day-content-${idx}`);
+      renderDailyTimeline(contentArea, dayInfo.sessions);
+    });
+  }
+
+  function toggleWeekDay(idx, headerEl) {
+    const accordion = headerEl.closest('.week-day-accordion');
+    const content = document.getElementById(`week-day-content-${idx}`);
+    if (content && accordion) {
+      content.classList.toggle('open');
+      accordion.classList.toggle('open');
+    }
+  }
+
   // Initialize Page
   window.addEventListener('DOMContentLoaded', () => {
     // Fill KPI Metrics
@@ -1275,6 +1782,7 @@ public static class Dashboard
     drawWeekChart();
     drawAllTimeBreakdown();
     renderMappingsTable(processMappings);
+    loadTimelineData();
   });
 </script>
 </body>

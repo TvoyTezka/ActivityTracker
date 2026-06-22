@@ -4,7 +4,7 @@ namespace TrackerApp;
 
 public partial class ReportForm : Form
 {
-    public ReportForm(string title, List<(string process, string category, long totalSeconds)> data)
+    public ReportForm(string title, List<(string process, string category, string? customName, long totalSeconds)> data)
     {
         Text = title;
         Size = new Size(500, 400);
@@ -47,9 +47,10 @@ public partial class ReportForm : Form
         dt.Columns.Add("Application", typeof(string));
 
         long total = 0;
-        foreach (var (proc, cat, dur) in data)
+        foreach (var (proc, cat, customName, dur) in data)
         {
-            dt.Rows.Add(FormatDuration(dur), cat, proc);
+            var appDisplayName = string.IsNullOrEmpty(customName) ? proc : $"{customName} ({proc})";
+            dt.Rows.Add(FormatDuration(dur), cat, appDisplayName);
             total += dur;
         }
         dt.Rows.Add(FormatDuration(total), "", "TOTAL");
