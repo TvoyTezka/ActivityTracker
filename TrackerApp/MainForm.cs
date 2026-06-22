@@ -28,6 +28,10 @@ public class MainForm : Form
         _webServer.Start();
         Dashboard.Port = _webServer.Port;
 
+        BackupManager.AutoBackup();
+        var lastBackup = BackupManager.LastBackupTime ?? "Never";
+        var backupLabel = $"Last backup: {lastBackup}";
+
         var autoStartItem = new ToolStripMenuItem("Auto-start with Windows",
             null, OnToggleAutoStart)
         { Checked = IsAutoStartEnabled() };
@@ -39,6 +43,8 @@ public class MainForm : Form
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(_pauseItem);
         menu.Items.Add("Settings...", null, (_, _) => new SettingsForm(_tracker).Show());
+        menu.Items.Add("Backup now", null, OnBackup);
+        menu.Items.Add(new ToolStripMenuItem(backupLabel) { Enabled = false });
         menu.Items.Add(autoStartItem);
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Exit", null, OnExit);
@@ -102,6 +108,18 @@ public class MainForm : Form
 
     [System.Runtime.InteropServices.DllImport("user32.dll")]
     private static extern bool DestroyIcon(IntPtr hIcon);
+
+    private void OnBackup(object? sender, EventArgs e)
+    {
+        if (BackupManager.ManualBackup())
+        {
+            _trayIcon.ShowBalloonTip(2000, "Backup", $"Backup saved: {BackupManager.LastBackupTime}", ToolTipIcon.Info);
+        }
+        else
+        {
+            _trayIcon.ShowBalloonTip(2000, "Backup failed", "Could not create backup. Check disk space.", ToolTipIcon.Error);
+        }
+    }
 
     private void OnExit(object? sender, EventArgs e)
     {

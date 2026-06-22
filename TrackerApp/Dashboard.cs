@@ -1050,6 +1050,11 @@ public static class Dashboard
     return `${sec}s`;
   }
 
+  // Strip common executable extensions for cleaner display
+  function stripExt(name) {
+    return name.replace(/\.(exe|com|bat|cmd|dll)$/i, '');
+  }
+
   // Switch tabs
   function switchTab(tabId) {
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -1238,7 +1243,7 @@ public static class Dashboard
 
     categoryData.items.forEach(proc => {
       const pct = (proc.seconds / categoryData.seconds) * 100;
-      const displayName = proc.customName || proc.process;
+      const displayName = stripExt(proc.customName || proc.process);
       const row = document.createElement('div');
       row.className = 'detail-row';
       row.innerHTML = `
@@ -1316,7 +1321,7 @@ public static class Dashboard
       let procRows = '';
       cat.items.slice(0, 5).forEach(proc => {
         const pct = (proc.seconds / cat.seconds) * 100;
-        const displayName = proc.customName || proc.process;
+        const displayName = stripExt(proc.customName || proc.process);
         procRows += `
           <div class=""detail-row"" style=""margin-bottom:6px"">
             <span class=""detail-name"" style=""width:120px; font-size:12px"" title=""${proc.process}"">${displayName}</span>
@@ -1377,7 +1382,7 @@ public static class Dashboard
       const displayVal = item.customName || '';
 
       tr.innerHTML = `
-        <td><span class=""proc-badge"">${item.process}</span></td>
+        <td><span class=""proc-badge"" title=""${item.process}"">${stripExt(item.process)}</span></td>
         <td>
           <input type=""text"" class=""custom-cat-input"" id=""display-input-${item.process}"" value=""${displayVal}"" placeholder=""Friendly Name (e.g. VS Code)"" style=""width: 200px;"" onchange=""saveMapping('${item.process}')"">
         </td>
@@ -1451,7 +1456,7 @@ public static class Dashboard
         }
 
         // Show toast
-        showToast(`Saved: ${process} &rarr; ${customName || process} [${category}]`);
+        showToast(`Saved: ${process} &rarr; ${stripExt(customName || process)} [${category}]`);
 
         // Update dashboard datasets
         updateLocalDataset(process, category, customName);
@@ -1606,7 +1611,7 @@ public static class Dashboard
     let currentGroup = null;
 
     data.forEach(session => {
-      const appName = session.CustomName || session.Process;
+      const appName = stripExt(session.CustomName || session.Process);
       
       const started = new Date(session.StartedAt);
       const ended = session.EndedAt ? new Date(session.EndedAt) : new Date();

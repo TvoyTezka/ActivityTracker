@@ -49,7 +49,8 @@ public partial class ReportForm : Form
         long total = 0;
         foreach (var (proc, cat, customName, dur) in data)
         {
-            var appDisplayName = string.IsNullOrEmpty(customName) ? proc : $"{customName} ({proc})";
+            var name = System.IO.Path.GetFileNameWithoutExtension(proc);
+            var appDisplayName = string.IsNullOrEmpty(customName) ? name : $"{customName} ({name})";
             dt.Rows.Add(FormatDuration(dur), cat, appDisplayName);
             total += dur;
         }
